@@ -1,11 +1,9 @@
-import pandas as pd
 import os
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from googleapiclient.discovery import build
 from urllib.parse import urlparse, parse_qs
-from youtube_comment_downloader import YoutubeCommentDownloader
 from dotenv import load_dotenv
 import google.generativeai as genai
 from youtube_transcript_api import YouTubeTranscriptApi
@@ -80,17 +78,30 @@ def fetch_comments(video_id, max_comments=1000):
     except Exception as e:
         return {"error": f"Error fetching video data: {e}"}, None
 
-    # 2. Fetch comments using Scrapper
+    # 2. Fetch comments in pages
     try:
-        video_url = f"https://www.youtube.com/watch?v={video_id}"
-        downloader = YoutubeCommentDownloader()
-        
-        for c in downloader.get_comments_from_url(video_url, sort_by=0): # 0: TOP
-            comments.append({
-                'author': c.get('author', 'Anonymous'),
-                'comment': c.get('text', '')
-            })
-            if len(comments) >= max_comments:
+        while len(comments) < max_comments:
+            comment_threads = youtube.commentThreads().list(
+                part="snippet",
+                videoId=video_id,
+                textFormat="plainText",
+                maxResults=min(50, max_comments - len(comments)),
+                pageToken=next_page_token
+            ).execute()
+
+            for item in comment_threads.get('items', []):
+                comment_snippet = item['snippet']['topLevelComment']['snippet']
+
+                comments.append({
+                    'author': comment_snippet.get('authorDisplayName', 'Anonymous'),
+                    'comment': comment_snippet.get('textDisplay', '')
+                })
+
+                if len(comments) >= max_comments:
+                    break
+
+            next_page_token = comment_threads.get('nextPageToken')
+            if not next_page_token:
                 break
     except Exception as e:
         # This often happens if comments are disabled
@@ -98,6 +109,8 @@ def fetch_comments(video_id, max_comments=1000):
              return {"error": "Comments are disabled or API quota exceeded."}, None
         # If we got some comments before the error, we proceed with what we have
         print(f"Warning: Stopped fetching comments early due to error: {e}")
+
+    return comments, video_data
 
 
 def fetch_transcript(video_id):
@@ -248,12 +261,29 @@ def get_analysis():
     else:
         reception, title, icon = 'negative', 'Negative Reception', 'fa-frown'
     
-    # Get top 10 comments with authors
+    # Calculate detailed sentiment percentages
+    neutral_count = total_comments_fetched - positive_count - negative_count
+    positive_pct = round((positive_count / total_comments_fetched) * 100, 1) if total_comments_fetched > 0 else 0.0
+    neutral_pct = round((neutral_count / total_comments_fetched) * 100, 1) if total_comments_fetched > 0 else 0.0
+    negative_pct = round((negative_count / total_comments_fetched) * 100, 1) if total_comments_fetched > 0 else 0.0
+    composite_score = round(sentiment_pct / 10.0, 1)
+
+    # Get top 50 comments with authors and individual tones
     top_comments = []
     for i in range(min(50, len(comments))):
+        comment_text = str(comments[i]['comment'])
+        vs = analyzer.polarity_scores(comment_text)
+        if vs['compound'] >= 0.05:
+            tone = 'positive'
+        elif vs['compound'] <= -0.05:
+            tone = 'negative'
+        else:
+            tone = 'neutral'
+
         top_comments.append({
             'author': comments[i]['author'],
-            'comment': str(comments[i]['comment'])
+            'comment': comment_text,
+            'tone': tone
         })
 
     # 7. Prepare Final JSON Response
@@ -262,10 +292,14 @@ def get_analysis():
         'icon': icon,
         'title': title,
         'description': f'Analysis based on {total_comments_fetched} live comments.',
-        'sentiment': round(sentiment_pct, 1),
+        'sentiment': reception,  # Set this to type for frontend compatibility
+        'positive': positive_pct,
+        'neutral': neutral_pct,
+        'negative': negative_pct,
         'engagement': round(engagement_pct, 1),
         'likes': video_data.get('likes', 0),
         'views': video_data.get('views', 0),
+        'score': composite_score,
         'comments': top_comments,
         'ai_verdict': ai_verdict
     }
