@@ -1,0 +1,7 @@
+Flask==3.0.3
+flask-cors==4.0.1
+vaderSentiment==3.3.2
+google-api-python-client==2.131.0
+python-dotenv==1.0.1
+google-generativeai==0.5.4
+youtube-transcript-api==0.6.2
