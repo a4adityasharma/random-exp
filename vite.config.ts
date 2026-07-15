@@ -17,7 +17,7 @@ export default defineConfig({
   },
   plugins: [
     ...tanstackStart(),
-    nitro({ preset: 'node-server' }),
+    nitro({ preset: 'vercel' }),
     react(),
     tsconfigPaths(),
     tailwindcss(),

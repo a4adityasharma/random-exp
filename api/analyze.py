@@ -141,7 +141,7 @@ Keep your response concise, max 3 sentences.
 Transcript:
 {transcript_text}"""
 
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
@@ -167,7 +167,7 @@ Description: {description[:500]}...
 Top Comments:
 {comments_text[:3000]}"""
 
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
