@@ -5,6 +5,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { nitro } from "nitro/vite";
 
+
 export default defineConfig({
   server: {
     proxy: {
@@ -16,7 +17,7 @@ export default defineConfig({
   },
   plugins: [
     ...tanstackStart(),
-    nitro({ preset: "vercel" }),
+    nitro({ preset: 'node-server' }),
     react(),
     tsconfigPaths(),
     tailwindcss(),
