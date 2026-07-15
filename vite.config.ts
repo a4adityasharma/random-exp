@@ -15,7 +15,9 @@ export default defineConfig({
   },
   plugins: [
     ...tanstackStart({
-      server: { entry: "server" },
+      server: { 
+        preset: "vercel"
+      },
     }),
     react(),
     tsconfigPaths(),
