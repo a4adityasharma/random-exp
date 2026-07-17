@@ -90,24 +90,29 @@ function Index() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [recentUrls, setRecentUrls] = useState<string[]>([]);
-
-  async function onAnalyze() {
-    const trimmedUrl = url.trim();
-    if (!trimmedUrl) return;
-
-    setRecentUrls((prev) => [trimmedUrl, ...prev.filter((item) => item !== trimmedUrl)].slice(0, 3));
+  const [recentUrls, setRecentUrls] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem("recent_urls");
+      if (stored) return JSON.parse(stored);
+    } catch (e) { }
+    return [];
+  });
 
   async function onAnalyze() {
     if (!url.trim()) return;
     setLoading(true);
     setResult(null);
     setError(null);
+
+    setRecentUrls((prev) => {
+      const updated = [url.trim(), ...prev.filter((u) => u !== url.trim())].slice(0, 3);
+      try {
+        localStorage.setItem("recent_urls", JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
     try {
       const apiBase = import.meta.env.VITE_API_URL || "http://localhost:5000";
-      const response = await fetch(`${apiBase}/analyze?url=${encodeURIComponent(trimmedUrl)}`);
-
-      const apiBase = import.meta.env.VITE_API_URL || "/api";
       const response = await fetch(`${apiBase}/analyze?url=${encodeURIComponent(url.trim())}`);
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
@@ -334,21 +339,16 @@ function Index() {
               </button>
             </div>
 
-            <div className="mt-2 flex flex-wrap gap-2 px-2 pb-2">
-              {recentUrls.length > 0 && <span className="text-xs text-muted-foreground">Recent:</span>}
-              {recentUrls.map((u) => (
-                <button
-                  key={u}
-                  onClick={() => setUrl(u)}
-                  className="rounded-full border border-border/60 px-3 py-1 text-xs text-muted-foreground transition hover:border-primary/50 hover:text-foreground"
-                >
-              <span className="text-xs text-muted-foreground">Try:</span>
-              {["https://youtu.be/dQw4w9WgXcQ","https://youtu.be/9bZkp7q19f0","https://youtu.be/kJQP7kiw5Fk"].map((u) => (
-                <button key={u} onClick={() => setUrl(u)} className="rounded-full border border-border/60 px-3 py-1 text-xs text-muted-foreground transition hover:border-primary/50 hover:text-foreground">
-                  {u.replace("https://", "")}
-                </button>
-              ))}
-            </div>
+            {recentUrls.length > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-2 px-2 pb-2">
+                <span className="text-xs text-muted-foreground">Recent:</span>
+                {recentUrls.map((u) => (
+                  <button key={u} onClick={() => setUrl(u)} className="rounded-full border border-border/60 px-3 py-1 text-xs text-muted-foreground transition hover:border-primary/50 hover:text-foreground">
+                    {u.replace(/^https?:\/\//, "").replace(/^www\./, "")}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Output */}
