@@ -112,7 +112,7 @@ function Index() {
       return updated;
     });
     try {
-      const apiBase = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      const apiBase = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000";
       const response = await fetch(`${apiBase}/analyze?url=${encodeURIComponent(url.trim())}`);
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
@@ -122,7 +122,7 @@ function Index() {
       setResult(data as Result);
     } catch (err: any) {
       console.error("Failed to fetch live analysis:", err);
-      setError(err.message || "Could not connect to analysis backend. Please make sure your Python Flask server is running at http://localhost:5000.");
+      setError(err.message || "Could not connect to analysis backend. Please make sure your Python Flask server is running at http://127.0.0.1:5000.");
     } finally {
       setLoading(false);
     }

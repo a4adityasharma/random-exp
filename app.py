@@ -99,6 +99,7 @@ def fetch_comments(video_id, max_comments=1000):
         # If we got some comments before the error, we proceed with what we have
         print(f"Warning: Stopped fetching comments early due to error: {e}")
 
+    return comments, video_data
 
 def fetch_transcript(video_id):
     try:
