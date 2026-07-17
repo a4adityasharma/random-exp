@@ -257,18 +257,28 @@ def get_analysis():
             'comment': str(comments[i]['comment'])
         })
 
-    # 7. Prepare Final JSON Response
+    # Calculate percentages for the UI distribution bar
+    total_for_pct = max(total_comments_fetched, 1)
+    neutral_count = total_for_pct - (positive_count + negative_count)
+    pos_pct = round((positive_count / total_for_pct) * 100, 1)
+    neg_pct = round((negative_count / total_for_pct) * 100, 1)
+    neu_pct = round((neutral_count / total_for_pct) * 100, 1)
+
+    # 7. Prepare Final JSON Response matching frontend Result interface
     result = {
-        'type': reception,
+        'sentiment': reception,
         'icon': icon,
         'title': title,
         'description': f'Analysis based on {total_comments_fetched} live comments.',
-        'sentiment': round(sentiment_pct, 1),
+        'positive': pos_pct,
+        'neutral': neu_pct,
+        'negative': neg_pct,
         'engagement': round(engagement_pct, 1),
         'likes': video_data.get('likes', 0),
         'views': video_data.get('views', 0),
         'comments': top_comments,
-        'ai_verdict': ai_verdict
+        'ai_verdict': ai_verdict,
+        'score': round(sentiment_pct / 10.0, 1)
     }
 
     return jsonify(result)
