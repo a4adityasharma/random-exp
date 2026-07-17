@@ -97,12 +97,18 @@ function Index() {
     if (!trimmedUrl) return;
 
     setRecentUrls((prev) => [trimmedUrl, ...prev.filter((item) => item !== trimmedUrl)].slice(0, 3));
+
+  async function onAnalyze() {
+    if (!url.trim()) return;
     setLoading(true);
     setResult(null);
     setError(null);
     try {
       const apiBase = import.meta.env.VITE_API_URL || "http://localhost:5000";
       const response = await fetch(`${apiBase}/analyze?url=${encodeURIComponent(trimmedUrl)}`);
+
+      const apiBase = import.meta.env.VITE_API_URL || "/api";
+      const response = await fetch(`${apiBase}/analyze?url=${encodeURIComponent(url.trim())}`);
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
         throw new Error(errData.error || `HTTP error! status: ${response.status}`);
@@ -336,6 +342,9 @@ function Index() {
                   onClick={() => setUrl(u)}
                   className="rounded-full border border-border/60 px-3 py-1 text-xs text-muted-foreground transition hover:border-primary/50 hover:text-foreground"
                 >
+              <span className="text-xs text-muted-foreground">Try:</span>
+              {["https://youtu.be/dQw4w9WgXcQ","https://youtu.be/9bZkp7q19f0","https://youtu.be/kJQP7kiw5Fk"].map((u) => (
+                <button key={u} onClick={() => setUrl(u)} className="rounded-full border border-border/60 px-3 py-1 text-xs text-muted-foreground transition hover:border-primary/50 hover:text-foreground">
                   {u.replace("https://", "")}
                 </button>
               ))}
